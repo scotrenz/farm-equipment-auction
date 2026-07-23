@@ -26,6 +26,7 @@ interface Listing {
 	status: Status;
 	endsAt: string;
 	imageUrl: string;
+	version: number;
 }
 
 interface BidRequest {
@@ -41,7 +42,9 @@ interface CreateListingRequest {
 // In-memory store — seeded from data/listings.json
 // ============================================================
 
-type SeedListing = Omit<Listing, "endsAt"> & { endsInMinutes: number };
+type SeedListing = Omit<Listing, "endsAt" | "version"> & {
+	endsInMinutes: number;
+};
 
 const seed: SeedListing[] = JSON.parse(
 	readFileSync(join(__dirname, "data", "listings.json"), "utf-8"),
@@ -52,6 +55,7 @@ const bootTime = Date.now();
 const listings: Listing[] = seed.map(({ endsInMinutes, ...rest }) => ({
 	...rest,
 	endsAt: new Date(bootTime + endsInMinutes * 60_000).toISOString(),
+	version: 0,
 }));
 
 // ============================================================
@@ -97,6 +101,7 @@ function hasEnded(listing: Listing, now = Date.now()): boolean {
 
 function closeListing(listing: Listing) {
 	listing.status = "closed";
+	listing.version += 1;
 	broadcast({ type: "closed", listing });
 }
 
@@ -161,6 +166,7 @@ app.post("/api/listings", (req: Request, res: Response) => {
 		status: "active",
 		endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
 		imageUrl: "",
+		version: 0,
 	};
 
 	listings.push(listing);
@@ -217,6 +223,7 @@ app.post("/api/listings/:id/bids", (req: Request, res: Response) => {
 
 	listing.currentBid = bid.amount;
 	listing.currentBidder = bid.bidder.trim();
+	listing.version += 1;
 
 	broadcast({ type: "bid", listing });
 

@@ -27,7 +27,11 @@ export default function App() {
 	const selectedListing = listings.find((l) => l.id === selectedId) ?? null;
 
 	const applyListing = (updated: Listing) => {
-		setListings((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+		setListings((prev) =>
+			prev.map((l) =>
+				l.id === updated.id && updated.version > l.version ? updated : l,
+			),
+		);
 	};
 
 	useListingEvents((event) => {
