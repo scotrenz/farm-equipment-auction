@@ -86,6 +86,32 @@ const heartbeat = setInterval(() => {
 heartbeat.unref();
 
 // ============================================================
+// Expiry
+// ============================================================
+
+const EXPIRY_INTERVAL_MS = 1_000;
+
+function hasEnded(listing: Listing, now = Date.now()): boolean {
+	return new Date(listing.endsAt).getTime() <= now;
+}
+
+function closeListing(listing: Listing) {
+	listing.status = "closed";
+	broadcast({ type: "closed", listing });
+}
+
+const expiryTimer = setInterval(() => {
+	const now = Date.now();
+	for (const listing of listings) {
+		if (listing.status === "active" && hasEnded(listing, now)) {
+			closeListing(listing);
+		}
+	}
+}, EXPIRY_INTERVAL_MS);
+
+expiryTimer.unref();
+
+// ============================================================
 // App
 // ============================================================
 
@@ -155,6 +181,10 @@ app.post("/api/listings/:id/bids", (req: Request, res: Response) => {
 	const listing = listings.find((l) => l.id === req.params.id);
 	if (!listing) {
 		return res.status(404).json({ error: "Listing not found" });
+	}
+
+	if (listing.status === "active" && hasEnded(listing)) {
+		closeListing(listing);
 	}
 
 	if (listing.status !== "active") {
