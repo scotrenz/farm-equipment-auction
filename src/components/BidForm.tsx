@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { placeBid } from "../api/listings";
+import { formatTimeRemaining, useCountdown } from "../hooks/useCountdown";
 import type { Listing } from "../types";
+
+const URGENT_MS = 5 * 60 * 1000;
 
 interface Props {
 	listing: Listing;
@@ -10,6 +13,7 @@ interface Props {
 export default function BidForm({ listing, onBidSuccess }: Props) {
 	const [error, setError] = useState<string | null>(null);
 	const [submitting, setSubmitting] = useState(false);
+	const remaining = useCountdown(listing.endsAt);
 
 	const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -44,6 +48,11 @@ export default function BidForm({ listing, onBidSuccess }: Props) {
 	return (
 		<form className="bid-form" onSubmit={handleSubmit}>
 			<h4 className="bid-form__title">Place a Bid</h4>
+			<div
+				className={`bid-form__countdown ${remaining < URGENT_MS ? "bid-form__countdown--urgent" : ""}`}
+			>
+				{formatTimeRemaining(remaining)}
+			</div>
 			{error && <div className="bid-form__error">{error}</div>}
 			<div className="bid-form__field">
 				<label htmlFor="bidder">Your Name</label>

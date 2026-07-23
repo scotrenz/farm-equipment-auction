@@ -408,6 +408,31 @@ body {
 	color: #721c24;
 }
 
+.bid-form__countdown {
+	margin: -8px 0 12px;
+	font-size: 1.05rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: #444;
+}
+
+.bid-form__countdown--urgent {
+	color: #c0392b;
+}
+
+.listing-detail__ended {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-top: 20px;
+	padding: 16px;
+	border: 1px solid #e0e0e0;
+	border-radius: 6px;
+	background: #fafafa;
+	font-size: 0.9rem;
+	color: #555;
+}
+
 .empty-state {
 	display: flex;
 	align-items: center;

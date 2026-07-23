@@ -60,8 +60,17 @@ export default function ListingDetail({ listing, onBidSuccess }: Props) {
 				</div>
 			</div>
 
-			{listing.status === "active" && (
+			{listing.status === "active" ? (
 				<BidForm listing={listing} onBidSuccess={onBidSuccess} />
+			) : (
+				<div className="listing-detail__ended">
+					<strong>This auction has ended.</strong>
+					<span>
+						{listing.currentBidder
+							? `Won by ${listing.currentBidder} at $${listing.currentBid.toLocaleString()}.`
+							: "It closed without any bids."}
+					</span>
+				</div>
 			)}
 		</div>
 	);
