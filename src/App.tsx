@@ -3,6 +3,7 @@ import { getListings } from "./api/listings";
 import CreateListingForm from "./components/CreateListingForm";
 import ListingCard from "./components/ListingCard";
 import ListingDetail from "./components/ListingDetail";
+import { useListingEvents } from "./hooks/useListingEvents";
 import type { Listing } from "./types";
 
 export default function App() {
@@ -25,9 +26,17 @@ export default function App() {
 
 	const selectedListing = listings.find((l) => l.id === selectedId) ?? null;
 
-	const handleBidSuccess = (updated: Listing) => {
+	const applyListing = (updated: Listing) => {
 		setListings((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
 	};
+
+	useListingEvents((event) => {
+		if (event.type === "bid" || event.type === "closed") {
+			applyListing(event.listing);
+		}
+	});
+
+	const handleBidSuccess = applyListing;
 
 	const handleListingCreated = (listing: Listing) => {
 		setListings((prev) => [...prev, listing]);
