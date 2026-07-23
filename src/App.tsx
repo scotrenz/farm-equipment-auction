@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getListings } from "./api/listings";
 import CreateListingForm from "./components/CreateListingForm";
 import ListingCard from "./components/ListingCard";
@@ -13,9 +13,14 @@ export default function App() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
-	useEffect(() => {
-		getListings()
-			.then((data) => setListings(data))
+	const hasConnected = useRef(false);
+
+	const loadListings = useCallback(() => {
+		return getListings()
+			.then((data) => {
+				setListings(data);
+				setError(null);
+			})
 			.catch((err) =>
 				setError(
 					err instanceof Error ? err.message : "Failed to load listings",
@@ -23,6 +28,10 @@ export default function App() {
 			)
 			.finally(() => setLoading(false));
 	}, []);
+
+	useEffect(() => {
+		loadListings();
+	}, [loadListings]);
 
 	const selectedListing = listings.find((l) => l.id === selectedId) ?? null;
 
@@ -35,9 +44,15 @@ export default function App() {
 	};
 
 	useListingEvents((event) => {
-		if (event.type === "bid" || event.type === "closed") {
-			applyListing(event.listing);
+		if (event.type === "connected") {
+			if (hasConnected.current) {
+				loadListings();
+			}
+			hasConnected.current = true;
+			return;
 		}
+
+		applyListing(event.listing);
 	});
 
 	const handleBidSuccess = applyListing;
