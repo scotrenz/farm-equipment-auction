@@ -41,9 +41,18 @@ interface CreateListingRequest {
 // In-memory store — seeded from data/listings.json
 // ============================================================
 
-const listings: Listing[] = JSON.parse(
+type SeedListing = Omit<Listing, "endsAt"> & { endsInMinutes: number };
+
+const seed: SeedListing[] = JSON.parse(
 	readFileSync(join(__dirname, "data", "listings.json"), "utf-8"),
 );
+
+const bootTime = Date.now();
+
+const listings: Listing[] = seed.map(({ endsInMinutes, ...rest }) => ({
+	...rest,
+	endsAt: new Date(bootTime + endsInMinutes * 60_000).toISOString(),
+}));
 
 // ============================================================
 // App
