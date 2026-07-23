@@ -55,6 +55,37 @@ const listings: Listing[] = seed.map(({ endsInMinutes, ...rest }) => ({
 }));
 
 // ============================================================
+// Realtime — SSE subscribers
+// ============================================================
+
+type ServerEvent =
+	| { type: "connected" }
+	| { type: "bid"; listing: Listing }
+	| { type: "closed"; listing: Listing };
+
+const subscribers = new Set<Response>();
+
+function send(res: Response, event: ServerEvent) {
+	res.write(`data: ${JSON.stringify(event)}\n\n`);
+}
+
+function broadcast(event: ServerEvent) {
+	for (const res of subscribers) {
+		send(res, event);
+	}
+}
+
+const HEARTBEAT_MS = 25_000;
+
+const heartbeat = setInterval(() => {
+	for (const res of subscribers) {
+		res.write(": ping\n\n");
+	}
+}, HEARTBEAT_MS);
+
+heartbeat.unref();
+
+// ============================================================
 // App
 // ============================================================
 
@@ -66,6 +97,23 @@ app.use(express.json());
 // GET /api/listings
 app.get("/api/listings", (_req: Request, res: Response) => {
 	res.json(listings);
+});
+
+// GET /api/events
+app.get("/api/events", (req: Request, res: Response) => {
+	res.writeHead(200, {
+		"Content-Type": "text/event-stream",
+		"Cache-Control": "no-cache",
+		Connection: "keep-alive",
+	});
+
+	subscribers.add(res);
+	send(res, { type: "connected" });
+
+	req.on("close", () => {
+		subscribers.delete(res);
+		res.end();
+	});
 });
 
 // POST /api/listings
@@ -139,6 +187,8 @@ app.post("/api/listings/:id/bids", (req: Request, res: Response) => {
 
 	listing.currentBid = bid.amount;
 	listing.currentBidder = bid.bidder.trim();
+
+	broadcast({ type: "bid", listing });
 
 	return res.status(201).json(listing);
 });
